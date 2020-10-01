@@ -174,7 +174,12 @@ export default {
     },
     handleSubmit() {
       return new Promise(() => {
-        if (this.validateUsername().then()) {
+        this.validateUsername().then((result) => {
+
+          // If it failed, bail!
+          if (!result) return;
+
+          // Post application submission
           this.axios.post("/application/submit", {
             "minecraftUsername": this.questions[0].data,
             "age": this.questions[1].data,
@@ -185,12 +190,9 @@ export default {
             "showcase": this.questions[6].data,
           })
               .then((response) => {
-                console.log("'" + response.data + "'");
                 if (response.data !== "Application inserted successfully.") {
-                  console.log("emit fail");
                   this.$emit("application-fail", response.data);
                 } else {
-                  console.log("emit success");
                   this.$emit("successful-registration");
                 }
                 this.$bvModal.hide("register-modal");
@@ -198,7 +200,9 @@ export default {
             this.$emit("application-fail", "Caught an error! - " + error);
             this.$bvModal.hide("register-modal");
           });
-        }
+        }).then(() => {
+          console.log("finished");
+        });
       });
     },
     resetModal() {

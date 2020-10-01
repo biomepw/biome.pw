@@ -5,7 +5,7 @@ use std::env;
 
 use actix_web::http::StatusCode;
 use actix_web::web::{Data, Json};
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, middleware};
+use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
 use bson::Bson;
 use dotenv::dotenv;
 use futures::executor::block_on;
@@ -21,6 +21,7 @@ pub struct UUIDResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Application {
     minecraft_username: String,
     age: String,
@@ -31,17 +32,25 @@ pub struct Application {
     showcase: String,
 }
 
-#[post("/application")]
 async fn application(database: Data<Database>, application: Json<Application>) -> impl Responder {
-    if get_application(&application.minecraft_username, &database)
+    if get_application(&application.linking_id, &database)
         .await
         .is_some()
     {
-        HttpResponse::BadRequest().body("Application already exists!")
+        println!(
+            "Attempted submission already exists: {}",
+            &application.minecraft_username
+        );
+        HttpResponse::Accepted().body("Application already exists!")
     } else {
         let collection = database.collection("applications");
         let serialised = bson::to_bson(&application.0).unwrap();
         let document = serialised.as_document().unwrap().clone();
+
+        println!(
+            "Insertion of submission: {}",
+            &application.minecraft_username
+        );
 
         match collection.insert_one(document, None).await {
             Ok(_) => HttpResponse::Ok().body("Application inserted successfully."),
@@ -53,7 +62,6 @@ async fn application(database: Data<Database>, application: Json<Application>) -
     }
 }
 
-#[get("/validate/{name}/")]
 async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
     let player_name = name.to_lowercase();
     let url = format!(
@@ -61,7 +69,7 @@ async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
         &player_name
     );
 
-    let mut uuid_response = UUIDResponse { id: "empty".to_string() };
+    let mut uuid_response = UUIDResponse { id: "".to_string() };
 
     // Try get response from mojang
     if let Ok(response) = reqwest::get(&url).await {
@@ -73,10 +81,10 @@ async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
     actix_web::Result::Ok(HttpResponse::Ok().json(uuid_response))
 }
 
-async fn get_application(username: &str, database: &Database) -> Option<Application> {
-    let collection = database.collection("project_data");
+async fn get_application(discord_id: &str, database: &Database) -> Option<Application> {
+    let collection = database.collection("applications");
 
-    let document = doc! { "username": &username };
+    let document = doc! { "linkingId": &discord_id };
 
     if let Ok(mut cursor) = collection.find(document, None).await {
         while let Some(doc_result) = cursor.next().await {
@@ -102,6 +110,7 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
+    println!("Now up and running!");
     HttpServer::new(|| {
         let mongo_conn_str = env::var("DB_CONN_STR").expect("No DB_CONN_STR variable found!");
 
@@ -115,8 +124,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(middleware::Logger::default())
             .data(db)
-            .service(validate)
-            .service(application)
+            .service(web::resource("/validate/{name}").route(web::get().to(validate)))
+            .service(web::resource("/application/submit").route(web::post().to(application)))
             .service(web::resource("/").route(web::get().to(index)))
             .service(actix_files::Files::new("/", "static/dist/").show_files_listing())
     })

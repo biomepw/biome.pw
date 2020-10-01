@@ -1,11 +1,16 @@
 <template>
   <div id="mid">
-    <b-alert v-if="showSubmissionAlert" variant="success" dismissible>Success Alert</b-alert>
+    <b-alert v-if="showSubmissionAlert" variant="success" dismissible show>Successfully submitted application! Ensure that
+      you're in our Discord to be notified when your application changes state!
+    </b-alert>
+    <b-alert v-if="showFailedAlert" variant="danger" dismissible show>Failed to submit application - '{{ failReason }}'
+    </b-alert>
     <h1>Welcome to <span style="color: #5658dd;">Biome</span></h1>
     <p>A vanilla, whitelisted, Australian-based Minecraft server with a focus on community engagement and
       interaction.</p>
     <b-button class="button-primary custom-button"
-              v-b-modal:register-modal>Apply for whitelist</b-button>
+              v-b-modal:register-modal>Apply for whitelist
+    </b-button>
     <b-button
         class="button-dark custom-button dark-button">
       <a href="https://discord.gg/YhgEsdZ">Join us on Discord</a>
@@ -14,7 +19,10 @@
         class="button-dark custom-button dark-button">
       <a href="https://biome.pw/map/">View the server map</a>
     </b-button>
-    <RegisterModal></RegisterModal>
+    <RegisterModal
+        @successful-registration="handleSuccess"
+        @application-fail="handleFailed"
+    ></RegisterModal>
   </div>
 </template>
 
@@ -27,8 +35,20 @@ export default {
   data: () => {
     return {
       showSubmissionAlert: false,
+      showFailedAlert: false,
+      failReason: "",
     }
   },
+  methods: {
+    handleSuccess() {
+      this.showSubmissionAlert = true
+    },
+    handleFailed(reason) {
+      console.log("handling failed!");
+      this.showFailedAlert = true;
+      this.failReason = reason;
+    }
+  }
 }
 </script>
 

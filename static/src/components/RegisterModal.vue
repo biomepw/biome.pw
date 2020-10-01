@@ -22,7 +22,8 @@
               :state="question.state"
               required
           ></b-form-input>
-          <b-form-invalid-feedback :state="validateQuestion(question)"> {{ question.invalid }}
+          <b-form-invalid-feedback :state="validateQuestion(question)">
+            {{ question.invalid }}
           </b-form-invalid-feedback>
           <b-form-valid-feedback :state="validateQuestion(question)">
             {{ question.valid }}
@@ -109,32 +110,21 @@ export default {
     }
   },
   methods: {
-    checkFormValidity() {
-      let valid = 0;
+    validateUsername() {
+      return new Promise(() => {
+        let question = this.questions[0];
+        let url = "/validate/" + question.data;
 
-      // Loop over all questions to validate their responses
-      for (let i = 0; i < this.questions.length; i++) {
-        let question = this.questions[i];
-
-        if (question.id === 0) {
-          let url = "/validate/" + question.data;
-
-          this.axios.get(url).then((response) => {
-            if (response.data.id !== "") {
-              return true;
-            } else {
-              question.invalid = "Invalid Minecraft username!";
-            }
-          });
-        }
-
-        if (question.data.length !== 0) {
-          valid += 1;
-        }
-      }
-
-      // Ensure all fields are valid
-      return valid === this.questions.length;
+        this.axios.get(url).then((response) => {
+          if (response.data.id === "") {
+            question.invalid = "Please enter a valid Minecraft username!";
+            question.data = "";
+            return false;
+          } else {
+            return true;
+          }
+        });
+      });
     },
 
     validateQuestion(question) {
@@ -167,13 +157,42 @@ export default {
     },
     handleOk(bvModalEvt) {
       bvModalEvt.preventDefault()
+
       this.handleSubmit();
     },
     handleSubmit() {
-      return this.checkFormValidity();
+      return new Promise(() => {
+        if (this.validateUsername().then()) {
+          this.axios.post("/application/submit", {
+            "minecraftUsername": this.questions[0].data,
+            "age": this.questions[1].data,
+            "linkingId": this.questions[2].data,
+            "addOneThing": this.questions[3].data,
+            "projectsOnBiome": this.questions[4].data,
+            "biggestProject": this.questions[5].data,
+            "showcase": this.questions[6].data,
+          })
+              .then((response) => {
+                console.log("'" + response.data + "'");
+                if (response.data !== "Application inserted successfully.") {
+                  console.log("emit fail");
+                  this.$emit("application-fail", response.data);
+                } else {
+                  console.log("emit success");
+                  this.$emit("successful-registration");
+                }
+                this.$bvModal.hide("register-modal");
+              }).catch((error) => {
+            this.$emit("application-fail", "Caught an error! - " + error);
+            this.$bvModal.hide("register-modal");
+          });
+        }
+      });
     },
     resetModal() {
-      //
+      for (let i = 0; i < this.questions.length; i++) {
+        this.questions[i].data = "";
+      }
     },
     getLabelName(question) {
       return question.label + "-label";

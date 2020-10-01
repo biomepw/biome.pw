@@ -33,7 +33,7 @@ pub struct Application {
 
 #[post("/application")]
 async fn application(database: Data<Database>, application: Json<Application>) -> impl Responder {
-    return if get_application(&application.minecraft_username, &database)
+    if get_application(&application.minecraft_username, &database)
         .await
         .is_some()
     {
@@ -50,18 +50,18 @@ async fn application(database: Data<Database>, application: Json<Application>) -
                 HttpResponse::BadRequest().body("Application failed to insert.")
             }
         }
-    };
+    }
 }
 
 #[get("/validate/{name}/")]
-async fn validate(web::Path(name): web::Path<String>) -> actix_web::Result<HttpResponse> {
+async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
     let player_name = name.to_lowercase();
     let url = format!(
         "https://api.mojang.com/users/profiles/minecraft/{}",
         &player_name
     );
 
-    let mut uuid_response = UUIDResponse { id: "".to_string() };
+    let mut uuid_response = UUIDResponse { id: "empty".to_string() };
 
     // Try get response from mojang
     if let Ok(response) = reqwest::get(&url).await {

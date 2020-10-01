@@ -1,3 +1,4 @@
+git pull
 cd static
 yarn install
 yarn run build

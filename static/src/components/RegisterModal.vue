@@ -111,12 +111,12 @@ export default {
   },
   methods: {
     validateUsername() {
-      return new Promise(() => {
         let question = this.questions[0];
         let url = "/validate/" + question.data;
 
-        this.axios.get(url).then((response) => {
-          if (response.data.id === "") {
+        return this.axios.get(url).then((response) => {
+          console.log(response.data);
+          if (response.data === "") {
             question.invalid = "Please enter a valid Minecraft username!";
             question.data = "";
             return false;
@@ -124,7 +124,6 @@ export default {
             return true;
           }
         });
-      });
     },
 
     validateQuestion(question) {
@@ -173,36 +172,36 @@ export default {
       this.handleSubmit();
     },
     handleSubmit() {
-      return new Promise(() => {
-        this.validateUsername().then((result) => {
+      this.validateUsername().then(result => {
 
-          // If it failed, bail!
-          if (!result) return;
+        console.log("validate username and then " + result);
 
-          // Post application submission
-          this.axios.post("/application/submit", {
-            "minecraftUsername": this.questions[0].data,
-            "age": this.questions[1].data,
-            "linkingId": this.questions[2].data,
-            "addOneThing": this.questions[3].data,
-            "projectsOnBiome": this.questions[4].data,
-            "biggestProject": this.questions[5].data,
-            "showcase": this.questions[6].data,
-          })
-              .then((response) => {
-                if (response.data !== "Application inserted successfully.") {
-                  this.$emit("application-fail", response.data);
-                } else {
-                  this.$emit("successful-registration");
-                }
-                this.$bvModal.hide("register-modal");
-              }).catch((error) => {
-            this.$emit("application-fail", "Caught an error! - " + error);
-            this.$bvModal.hide("register-modal");
-          });
-        }).then(() => {
-          console.log("finished");
+        // If it failed, bail!
+        if (!result) return;
+
+        // Post application submission
+        this.axios.post("/application/submit", {
+          "minecraftUsername": this.questions[0].data,
+          "age": this.questions[1].data,
+          "linkingId": this.questions[2].data,
+          "addOneThing": this.questions[3].data,
+          "projectsOnBiome": this.questions[4].data,
+          "biggestProject": this.questions[5].data,
+          "showcase": this.questions[6].data,
+        })
+            .then((response) => {
+              if (response.data !== "Application inserted successfully.") {
+                this.$emit("application-fail", response.data);
+              } else {
+                this.$emit("successful-registration");
+              }
+              this.$bvModal.hide("register-modal");
+            }).catch((error) => {
+          this.$emit("application-fail", "Caught an error! - " + error);
+          this.$bvModal.hide("register-modal");
         });
+      }).then(() => {
+        console.log("finished");
       });
     },
     resetModal() {

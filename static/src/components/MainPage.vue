@@ -49,7 +49,6 @@ export default {
       this.showSubmissionAlert = true
     },
     handleFailed(reason) {
-      console.log("handling failed!");
       this.showFailedAlert = true;
       this.failReason = reason;
     }

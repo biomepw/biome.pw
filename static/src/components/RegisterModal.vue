@@ -173,9 +173,6 @@ export default {
     },
     handleSubmit() {
       this.validateUsername().then(result => {
-
-        console.log("validate username and then " + result);
-
         // If it failed, bail!
         if (!result) return;
 
@@ -187,7 +184,7 @@ export default {
           "addOneThing": this.questions[3].data,
           "projectsOnBiome": this.questions[4].data,
           "biggestProject": this.questions[5].data,
-          "showcase": this.questions[6].data,
+          "showcase": this.questions[6].data
         })
             .then((response) => {
               if (response.data !== "Application inserted successfully.") {
@@ -200,8 +197,6 @@ export default {
           this.$emit("application-fail", "Caught an error! - " + error);
           this.$bvModal.hide("register-modal");
         });
-      }).then(() => {
-        console.log("finished");
       });
     },
     resetModal() {

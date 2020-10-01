@@ -146,8 +146,8 @@ export default {
           }
         } else {
           if (id === 1) {
-            if (question.data.length >= 2) {
-              question.invalid = "Age must be at a minimum double digits!";
+            if (question.data.length < 2 && question.data.length > 4) {
+              question.invalid = "Age must be at minimum double digits!";
               return false;
             }
           }
@@ -159,7 +159,7 @@ export default {
           }
         }
 
-        return true;
+        return question.data !== "";
       }
 
       return false;

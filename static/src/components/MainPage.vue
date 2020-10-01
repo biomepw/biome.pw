@@ -1,6 +1,7 @@
 <template>
   <div id="mid">
-    <b-alert v-if="showSubmissionAlert" variant="success" dismissible show>Successfully submitted application! Ensure that
+    <b-alert v-if="showSubmissionAlert" variant="success" dismissible show>Successfully submitted application! Ensure
+      that
       you're in our Discord to be notified when your application changes state!
     </b-alert>
     <b-alert v-if="showFailedAlert" variant="danger" dismissible show>Failed to submit application - '{{ failReason }}'
@@ -18,6 +19,10 @@
     <b-button
         class="button-dark custom-button dark-button">
       <a href="https://biome.pw/map/">View the server map</a>
+    </b-button>
+    <b-button
+        class="button-dark custom-button dark-button">
+      <a href="https://plan.biome.pw/">Player statistics</a>
     </b-button>
     <RegisterModal
         @successful-registration="handleSuccess"

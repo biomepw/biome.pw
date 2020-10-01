@@ -134,7 +134,8 @@ export default {
         return question.data !== "";
       } else if (id === 1 || id === 2) {
         if (question.data.length === "") return false;
-        let numbers = /\d/.test(question.data);
+        let regex = new RegExp("^[0-9]*$");
+        let numbers = regex.test(question.data);
         if (!numbers) {
           if (id === 1) {
             question.invalid = "Your age must only be numbers!";
@@ -143,10 +144,18 @@ export default {
             question.invalid = "Discord ID must only contain numbers!";
             return false;
           }
-        } else if (numbers && id === 2) {
-          if (question.data.length !== 18) {
-            question.invalid = "Discord ID must only contain numbers and must be 18 characters long!";
-            return false;
+        } else {
+          if (id === 1) {
+            if (question.data.length >= 2) {
+              question.invalid = "Age must be at a minimum double digits!";
+              return false;
+            }
+          }
+          if (id === 2) {
+            if (question.data.length !== 18) {
+              question.invalid = "Discord ID must only contain numbers and must be 18 characters long!";
+              return false;
+            }
           }
         }
 

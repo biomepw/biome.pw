@@ -146,8 +146,11 @@ export default {
           }
         } else {
           if (id === 1) {
-            if (question.data.length < 2 && question.data.length > 4) {
+            if (question.data.length < 2) {
               question.invalid = "Age must be at minimum double digits!";
+              return false;
+            } else if (question.data.length > 2) {
+              question.invalid = "There's no way you're that old, gramps.";
               return false;
             }
           }

@@ -130,6 +130,7 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/application/submit").route(web::post().to(application)))
             .service(web::resource("/").route(web::get().to(index)))
             .service(actix_files::Files::new("/", "static/dist/").show_files_listing())
+            .service(actix_files::Files::new("/map", "map/").show_files_listing())
     })
     .bind("127.0.0.1:8003")?
     .run()

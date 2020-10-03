@@ -18,7 +18,7 @@
     </b-button>
     <b-button
         class="button-dark custom-button dark-button">
-      <a href="https://biome.pw/map/">View the server map</a>
+      <a href="https://view.biome.pw/">View the server map</a>
     </b-button>
     <b-button
         class="button-dark custom-button dark-button">

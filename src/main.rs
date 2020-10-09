@@ -147,9 +147,9 @@ mod tests {
           "minecraftUsername": "hu_sk",
           "age": "22",
           "linkingId": "276519212175065088",
-          "addOneThing": "drugsssss",
-          "projectsOnBiome": "nothing im fat",
-          "biggestProject": "Big cok n ball",
+          "addOneThing": "animals",
+          "projectsOnBiome": "nothing",
+          "biggestProject": "Bigness",
           "showcase": "Not much"
           }"#;
 
@@ -163,9 +163,9 @@ mod tests {
           "minecraftUsername": "hu_sk",
           "age": "22",
           "linkingId": "276519212175065088",
-          "addOneThing": "drugsssss",
-          "projectsOnBiome": "nothing im fat",
-          "biggestProject": "Big cok n ball",
+          "addOneThing": "more animal",
+          "projectsOnBiome": "nothing",
+          "biggestProject": "Big",
           "showcase": "Not much",
           "status": 2
           }"#;

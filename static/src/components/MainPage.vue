@@ -24,6 +24,10 @@
         class="button-dark custom-button dark-button">
       <a href="https://plan.biome.pw/">Player statistics</a>
     </b-button>
+    <b-button
+        class="button-dark custom-button dark-button">
+      <a href="https://github.com/biomepw/biome.pw/wiki">Wiki</a>
+    </b-button>
     <RegisterModal
         @successful-registration="handleSuccess"
         @application-fail="handleFailed"

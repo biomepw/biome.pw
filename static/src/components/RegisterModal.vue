@@ -199,7 +199,7 @@ export default {
           "showcase": this.questions[6].data
         })
             .then((response) => {
-              if (response.data !== "Application submitted successfully.") {
+              if (response.data !== "Application inserted successfully.") {
                 this.$emit("application-fail", response.data);
               } else {
                 this.$emit("successful-registration");

@@ -178,8 +178,8 @@ export default {
       return success;
     },
     handleOk(bvModalEvt) {
+      bvModalEvt.preventDefault();
       if (this.isValidForm()) {
-        bvModalEvt.preventDefault()
         this.handleSubmit();
       }
     },

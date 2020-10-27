@@ -111,19 +111,18 @@ export default {
   },
   methods: {
     validateUsername() {
-        let question = this.questions[0];
-        let url = "/validate/" + question.data;
+      let question = this.questions[0];
+      let url = "/validate/" + question.data;
 
-        return this.axios.get(url).then((response) => {
-          console.log(response.data);
-          if (response.data === "") {
-            question.invalid = "Please enter a valid Minecraft username!";
-            question.data = "";
-            return false;
-          } else {
-            return true;
-          }
-        });
+      return this.axios.get(url).then((response) => {
+        if (response.data === "") {
+          question.invalid = "Please enter a valid Minecraft username!";
+          question.data = "";
+          return false;
+        } else {
+          return true;
+        }
+      });
     },
 
     validateQuestion(question) {
@@ -166,10 +165,23 @@ export default {
 
       return false;
     },
-    handleOk(bvModalEvt) {
-      bvModalEvt.preventDefault()
+    isValidForm() {
+      let success = true;
+      for (let i = 0; i < this.questions.length; i++) {
+        let question = this.questions[i];
 
-      this.handleSubmit();
+        if (!this.validateQuestion(question)) {
+          success = false;
+        }
+      }
+
+      return success;
+    },
+    handleOk(bvModalEvt) {
+      if (this.isValidForm()) {
+        bvModalEvt.preventDefault()
+        this.handleSubmit();
+      }
     },
     handleSubmit() {
       this.validateUsername().then(result => {
@@ -187,7 +199,7 @@ export default {
           "showcase": this.questions[6].data
         })
             .then((response) => {
-              if (response.data !== "Application inserted successfully.") {
+              if (response.data !== "Application submitted successfully.") {
                 this.$emit("application-fail", response.data);
               } else {
                 this.$emit("successful-registration");

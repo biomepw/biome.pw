@@ -86,7 +86,7 @@ async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
 async fn get_application(discord_id: &str, database: &Database) -> Option<Application> {
     let collection = database.collection("applications");
 
-    let document = doc! { "linkingId": &discord_id };
+    let document = doc! { "linkingId": &discord_id, "status": 0};
 
     if let Ok(mut cursor) = collection.find(document, None).await {
         while let Some(doc_result) = cursor.next().await {

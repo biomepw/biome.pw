@@ -17,6 +17,7 @@ pub struct UUIDResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Application {
     minecraft_username: String,
     age: String,
@@ -114,4 +115,44 @@ async fn main() -> std::io::Result<()> {
     .bind("127.0.0.1:8003")?
     .run()
     .await
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Application;
+
+    #[test]
+    fn test_serialisation() {
+        let json_string = r#"
+          {
+          "minecraftUsername": "hu_sk",
+          "age": "22",
+          "linkingId": "276519212175065088",
+          "addOneThing": "animals",
+          "projectsOnBiome": "nothing",
+          "biggestProject": "Bigness",
+          "showcase": "Not much"
+          }"#;
+
+        let application: Application = serde_json::from_str(json_string).unwrap();
+
+        assert_eq!(application.status, 0);
+        assert_eq!(application.minecraft_username, "hu_sk");
+
+        let json_string = r#"
+          {
+          "minecraftUsername": "hu_sk",
+          "age": "22",
+          "linkingId": "276519212175065088",
+          "addOneThing": "more animal",
+          "projectsOnBiome": "nothing",
+          "biggestProject": "Big",
+          "showcase": "Not much",
+          "status": 2
+          }"#;
+
+        let application: Application = serde_json::from_str(json_string).unwrap();
+
+        assert_eq!(application.status, 0);
+    }
 }

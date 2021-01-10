@@ -2,6 +2,8 @@ use mysql::prelude::Queryable;
 use mysql::{Pool, PooledConn};
 use std::env;
 
+use crate::Application;
+
 pub struct MySQLConnection {
     pub pool: Pool,
 }
@@ -18,9 +20,33 @@ impl MySQLConnection {
         conn.query_drop(statement)
     }
 
-    pub async fn execute_query(&self, statement: &str) -> Vec<String> {
+    pub async fn execute_query(&self, statement: &str) -> Vec<Application> {
         let conn: &mut PooledConn = &mut self.pool.get_conn().unwrap();
-        conn.query(&statement).unwrap()
+        conn.query_map(
+            &statement,
+            |(
+                minecraft_username,
+                age,
+                linking_id,
+                add_one_thing,
+                projects_on_biome,
+                biggest_project,
+                showcase,
+                status,
+            )| {
+                Application {
+                    minecraft_username,
+                    age,
+                    linking_id,
+                    add_one_thing,
+                    projects_on_biome,
+                    biggest_project,
+                    showcase,
+                    status,
+                }
+            },
+        )
+        .unwrap()
     }
 }
 

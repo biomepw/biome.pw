@@ -41,7 +41,7 @@ async fn application(
         );
         HttpResponse::Accepted().body("Application already exists!")
     } else {
-        let update = format!("INSERT INTO `applications` (`minecraft_username`, `age`, `linking_id`, `add_one_thing`, `projects_on_biome`, `biggest_project`, `showcase`, `status`) VALUES ('{}',{},{},'{}','{}','{}','{}', {});", application.minecraft_username, application.age, application.linking_id, application.add_one_thing, application.projects_on_biome, application.biggest_project, application.showcase, application.status);
+        let update = format!("INSERT INTO `biomebot`.`applications` (`minecraft_username`, `age`, `linking_id`, `add_one_thing`, `projects_on_biome`, `biggest_project`, `showcase`, `status`) VALUES ('{}',{},{},'{}','{}','{}','{}', {});", application.minecraft_username, application.age, application.linking_id, application.add_one_thing, application.projects_on_biome, application.biggest_project, application.showcase, application.status);
 
         println!(
             "Insertion of submission: {}",
@@ -80,7 +80,7 @@ async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
 async fn application_exists(discord_id: &str, database: &MySQLConnection) -> bool {
     let results = database
         .execute_query(&format!(
-            "SELECT * FROM applications WHERE discord_id = {} AND status = 0;",
+            "SELECT `minecraft_username`, `age`, `linking_id`, `add_one_thing`, `projects_on_biome`, `biggest_project`, `showcase`, `status` FROM `biomebot`.`applications` WHERE `linking_id` = {} AND `status` = 0;",
             discord_id,
         ))
         .await;

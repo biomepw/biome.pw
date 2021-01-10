@@ -1,27 +1,22 @@
 extern crate dotenv;
 extern crate env_logger;
 
-use std::env;
-
 use actix_web::http::StatusCode;
 use actix_web::web::{Data, Json};
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
-use bson::Bson;
+use database_connection::MySQLConnection;
 use dotenv::dotenv;
-use futures::executor::block_on;
-use futures::StreamExt;
-use mongodb::bson::doc;
-use mongodb::{bson, Client, Database};
 use serde::Deserialize;
 use serde::Serialize;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+mod database_connection;
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UUIDResponse {
     id: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Deserialize)]
 pub struct Application {
     minecraft_username: String,
     age: String,
@@ -34,27 +29,25 @@ pub struct Application {
     status: i32,
 }
 
-async fn application(database: Data<Database>, application: Json<Application>) -> impl Responder {
-    if get_application(&application.linking_id, &database)
-        .await
-        .is_some()
-    {
+async fn application(
+    database: Data<MySQLConnection>,
+    application: Json<Application>,
+) -> impl Responder {
+    if application_exists(&application.linking_id, &database).await {
         println!(
             "Attempted submission already exists: {}",
             &application.minecraft_username
         );
         HttpResponse::Accepted().body("Application already exists!")
     } else {
-        let collection = database.collection("applications");
-        let serialised = bson::to_bson(&application.0).unwrap();
-        let document = serialised.as_document().unwrap().clone();
+        let update = format!("INSERT INTO `applications` (`minecraft_username`, `age`, `linking_id`, `add_one_thing`, `projects_on_biome`, `biggest_project`, `showcase`, `status`) VALUES ('{}',{},{},'{}','{}','{}','{}', {});", application.minecraft_username, application.age, application.linking_id, application.add_one_thing, application.projects_on_biome, application.biggest_project, application.showcase, application.status);
 
         println!(
             "Insertion of submission: {}",
             &application.minecraft_username
         );
 
-        match collection.insert_one(document, None).await {
+        match database.execute_update(&update).await {
             Ok(_) => HttpResponse::Ok().body("Application inserted successfully."),
             Err(why) => {
                 eprintln!("Application failed to insert!, {:#?}", why);
@@ -83,20 +76,15 @@ async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
     actix_web::Result::Ok(HttpResponse::Ok().json(uuid_response))
 }
 
-async fn get_application(discord_id: &str, database: &Database) -> Option<Application> {
-    let collection = database.collection("applications");
+async fn application_exists(discord_id: &str, database: &MySQLConnection) -> bool {
+    let results = database
+        .execute_query(&format!(
+            "SELECT * FROM applications WHERE discord_id = {} AND status = 0;",
+            discord_id,
+        ))
+        .await;
 
-    let document = doc! { "linkingId": &discord_id, "status": 0};
-
-    if let Ok(mut cursor) = collection.find(document, None).await {
-        while let Some(doc_result) = cursor.next().await {
-            if let Ok(document) = doc_result {
-                let app: Application = bson::from_bson(Bson::Document(document)).unwrap();
-                return Some(app);
-            }
-        }
-    }
-    None
+    !results.is_empty()
 }
 
 /// Default path, returns the index file
@@ -114,18 +102,10 @@ async fn main() -> std::io::Result<()> {
 
     println!("Now up and running!");
     HttpServer::new(|| {
-        let mongo_conn_str = env::var("DB_CONN_STR").expect("No DB_CONN_STR variable found!");
-
-        let mongo_db = env::var("DB_NAME").expect("No DB_NAME variable found!");
-
-        let client = block_on(Client::with_uri_str(&mongo_conn_str))
-            .expect("Unable to connect to database provided!");
-
-        let db = client.database(&mongo_db);
-
+        let mysql = MySQLConnection::new();
         App::new()
             .wrap(middleware::Logger::default())
-            .data(db)
+            .data(mysql)
             .service(web::resource("/validate/{name}").route(web::get().to(validate)))
             .service(web::resource("/application/submit").route(web::post().to(application)))
             .service(web::resource("/").route(web::get().to(index)))
@@ -134,44 +114,4 @@ async fn main() -> std::io::Result<()> {
     .bind("127.0.0.1:8003")?
     .run()
     .await
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::Application;
-
-    #[test]
-    fn test_serialisation() {
-        let json_string = r#"
-          {
-          "minecraftUsername": "hu_sk",
-          "age": "22",
-          "linkingId": "276519212175065088",
-          "addOneThing": "animals",
-          "projectsOnBiome": "nothing",
-          "biggestProject": "Bigness",
-          "showcase": "Not much"
-          }"#;
-
-        let application: Application = serde_json::from_str(json_string).unwrap();
-
-        assert_eq!(application.status, 0);
-        assert_eq!(application.minecraft_username, "hu_sk");
-
-        let json_string = r#"
-          {
-          "minecraftUsername": "hu_sk",
-          "age": "22",
-          "linkingId": "276519212175065088",
-          "addOneThing": "more animal",
-          "projectsOnBiome": "nothing",
-          "biggestProject": "Big",
-          "showcase": "Not much",
-          "status": 2
-          }"#;
-
-        let application: Application = serde_json::from_str(json_string).unwrap();
-
-        assert_eq!(application.status, 0);
-    }
 }

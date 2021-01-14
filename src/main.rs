@@ -1,58 +1,63 @@
 extern crate dotenv;
 extern crate env_logger;
+#[macro_use]
+extern crate diesel;
+
+use std::env;
 
 use actix_web::http::StatusCode;
 use actix_web::web::{Data, Json};
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
-use database_connection::MySQLConnection;
+use diesel::{insert_into, Connection, MysqlConnection};
 use dotenv::dotenv;
+use models::Application;
 use serde::Deserialize;
 use serde::Serialize;
 
-mod database_connection;
+use crate::schema::applications::dsl::*;
+use diesel::prelude::*;
+
+pub mod models;
+pub mod schema;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UUIDResponse {
     id: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Application {
-    minecraft_username: String,
-    age: String,
-    linking_id: String,
-    add_one_thing: String,
-    projects_on_biome: String,
-    biggest_project: String,
-    showcase: String,
-    #[serde(skip_deserializing)]
-    status: i32,
-}
-
 async fn application(
-    database: Data<MySQLConnection>,
+    database: Data<MysqlConnection>,
     application: Json<Application>,
 ) -> impl Responder {
-    if application_exists(&application.linking_id, &database).await {
+    if application_exists(application.linking_id, &database).await {
         println!(
             "Attempted submission already exists: {}",
             &application.minecraft_username
         );
         HttpResponse::Accepted().body("Application already exists!")
     } else {
-        let update = format!("INSERT INTO `applications` (`minecraft_username`, `age`, `linking_id`, `add_one_thing`, `projects_on_biome`, `biggest_project`, `showcase`, `status`) VALUES ('{}',{},{},'{}','{}','{}','{}', {});", application.minecraft_username, application.age, application.linking_id, application.add_one_thing, application.projects_on_biome, application.biggest_project, application.showcase, application.status);
+        insert_submission(&application, &database).await
+    }
+}
 
-        println!(
-            "Insertion of submission: {}",
-            &application.minecraft_username
-        );
+async fn insert_submission(
+    application: &Application,
+    connection: &MysqlConnection,
+) -> HttpResponse {
+    println!(
+        "Insertion of submission: {}",
+        &application.minecraft_username
+    );
 
-        match database.execute_update(&update).await {
-            Ok(_) => HttpResponse::Ok().body("Application inserted successfully."),
-            Err(why) => {
-                eprintln!("Application failed to insert!, {:#?}", why);
-                HttpResponse::BadRequest().body("Application failed to insert.")
-            }
+    let result = insert_into(applications)
+        .values(application)
+        .execute(connection);
+
+    match result {
+        Ok(_) => HttpResponse::Ok().body("Application inserted successfully."),
+        Err(why) => {
+            eprintln!("Application failed to insert!, {:#?}", why);
+            HttpResponse::BadRequest().body("Application failed to insert.")
         }
     }
 }
@@ -76,13 +81,13 @@ async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
     actix_web::Result::Ok(HttpResponse::Ok().json(uuid_response))
 }
 
-async fn application_exists(discord_id: &str, database: &MySQLConnection) -> bool {
-    let results = database
-        .execute_query(&format!(
-            "SELECT * FROM applications WHERE discord_id = {} AND status = 0;",
-            discord_id,
-        ))
-        .await;
+async fn application_exists(discord_id: i64, database: &MysqlConnection) -> bool {
+    let results = applications
+        .filter(linking_id.eq(discord_id))
+        .filter(status.eq(0))
+        .limit(1)
+        .load::<Application>(database)
+        .expect("Error checking to see if application exists");
 
     !results.is_empty()
 }
@@ -102,7 +107,10 @@ async fn main() -> std::io::Result<()> {
 
     println!("Now up and running!");
     HttpServer::new(|| {
-        let mysql = MySQLConnection::new();
+        let db_url =
+            env::var("DATABASE_URL").expect("No DATABASE_URL environment variable defined!");
+        let mysql =
+            MysqlConnection::establish(&db_url).expect("Error when trying to connect to database");
         App::new()
             .wrap(middleware::Logger::default())
             .data(mysql)

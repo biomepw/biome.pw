@@ -2,9 +2,11 @@ use serde::Deserialize;
 
 use crate::schema::applications;
 
-#[derive(Queryable, Deserialize, Insertable)]
+#[derive(Queryable, Deserialize, Insertable, Debug)]
+#[serde(rename_all = "camelCase")]
 #[table_name = "applications"]
 pub struct Application {
+    #[serde(skip_deserializing)]
     pub row_id: i32,
     pub minecraft_username: String,
     pub age: i32,

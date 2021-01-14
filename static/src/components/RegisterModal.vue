@@ -1,26 +1,26 @@
 <template>
   <div>
     <b-modal
-        id="register-modal"
-        ref="modal"
-        title="Apply to the whitelist"
-        @show="resetModal"
-        @hidden="resetModal"
-        @ok="handleOk"
+      id="register-modal"
+      ref="modal"
+      title="Apply to the whitelist"
+      @show="resetModal"
+      @hidden="resetModal"
+      @ok="handleOk"
     >
       <form ref="form" @submit.stop.prevent="handleSubmit">
         <b-form-group
-            v-for="question in questions"
-            :key="question.question"
-            :state="inputState"
-            :label="question.question"
-            :label-for="getLabelName(question)"
+          v-for="question in questions"
+          :key="question.question"
+          :state="inputState"
+          :label="question.question"
+          :label-for="getLabelName(question)"
         >
           <b-form-input
-              :id="getIdName(question)"
-              v-model="question.data"
-              :state="question.state"
-              required
+            :id="getIdName(question)"
+            v-model="question.data"
+            :state="question.state"
+            required
           ></b-form-input>
           <b-form-invalid-feedback :state="validateQuestion(question)">
             {{ question.invalid }}
@@ -35,7 +35,6 @@
 </template>
 
 <script>
-
 export default {
   name: "RegisterModal",
   components: {},
@@ -62,7 +61,8 @@ export default {
         },
         {
           id: 2,
-          question: "What is your linking ID? (In Discord type !id in #general and BiomeBot will send you this!)",
+          question:
+            "What is your linking ID? (In Discord type !id in #general and BiomeBot will send you this!)",
           state: null,
           data: "",
           label: "linking-id",
@@ -71,7 +71,8 @@ export default {
         },
         {
           id: 3,
-          question: "If you could add one thing to Minecraft, what would it be?",
+          question:
+            "If you could add one thing to Minecraft, what would it be?",
           state: null,
           data: "",
           label: "add-one-thing",
@@ -89,7 +90,8 @@ export default {
         },
         {
           id: 5,
-          question: "What is your biggest Minecraft project? Or how do you spend your time playing Minecraft?",
+          question:
+            "What is your biggest Minecraft project? Or how do you spend your time playing Minecraft?",
           state: null,
           data: "",
           label: "biggest-project",
@@ -98,7 +100,8 @@ export default {
         },
         {
           id: 6,
-          question: "Can you showcase some of your previous builds? Upload here https://imgur.com/, then share the link below!",
+          question:
+            "Can you showcase some of your previous builds? Upload here https://imgur.com/, then share the link below!",
           state: null,
           data: "",
           label: "showcase",
@@ -107,7 +110,7 @@ export default {
         },
       ],
       inputState: null,
-    }
+    };
   },
   methods: {
     validateUsername() {
@@ -154,7 +157,8 @@ export default {
           }
           if (id === 2) {
             if (question.data.length !== 18) {
-              question.invalid = "Discord ID must only contain numbers and must be 18 characters long!";
+              question.invalid =
+                "Discord ID must only contain numbers and must be 18 characters long!";
               return false;
             }
           }
@@ -184,31 +188,33 @@ export default {
       }
     },
     handleSubmit() {
-      this.validateUsername().then(result => {
+      this.validateUsername().then((result) => {
         // If it failed, bail!
         if (!result) return;
 
         // Post application submission
-        this.axios.post("/application/submit", {
-          "minecraftUsername": this.questions[0].data,
-          "age": this.questions[1].data,
-          "linkingId": this.questions[2].data,
-          "addOneThing": this.questions[3].data,
-          "projectsOnBiome": this.questions[4].data,
-          "biggestProject": this.questions[5].data,
-          "showcase": this.questions[6].data
-        })
-            .then((response) => {
-              if (response.data !== "Application inserted successfully.") {
-                this.$emit("application-fail", response.data);
-              } else {
-                this.$emit("successful-registration");
-              }
-              this.$bvModal.hide("register-modal");
-            }).catch((error) => {
-          this.$emit("application-fail", "Caught an error! - " + error);
-          this.$bvModal.hide("register-modal");
-        });
+        this.axios
+          .post("/application/submit", {
+            minecraftUsername: this.questions[0].data,
+            age: parseInt(this.questions[1].data),
+            linkingId: parseInt(this.questions[2].data),
+            addOneThing: this.questions[3].data,
+            projectsOnBiome: this.questions[4].data,
+            biggestProject: this.questions[5].data,
+            showcase: this.questions[6].data,
+          })
+          .then((response) => {
+            if (response.data !== "Application inserted successfully.") {
+              this.$emit("application-fail", response.data);
+            } else {
+              this.$emit("successful-registration");
+            }
+            this.$bvModal.hide("register-modal");
+          })
+          .catch((error) => {
+            this.$emit("application-fail", "Caught an error! - " + error);
+            this.$bvModal.hide("register-modal");
+          });
       });
     },
     resetModal() {
@@ -221,11 +227,10 @@ export default {
     },
     getIdName(question) {
       return question.label + "-input";
-    }
+    },
   },
-}
+};
 </script>
 
 <style scoped>
-
 </style>

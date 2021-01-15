@@ -9,11 +9,13 @@ use crate::schema::applications::dsl::*;
 use actix_web::http::StatusCode;
 use actix_web::web::{Data, Json};
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
+use dashmap::DashMap;
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 use diesel::{insert_into, MysqlConnection};
 use dotenv::dotenv;
 use models::Application;
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -22,7 +24,9 @@ pub mod schema;
 
 type DbPool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
 
-#[derive(Debug, Serialize, Deserialize)]
+static CACHE: Lazy<DashMap<String, UUIDResponse>> = Lazy::new(|| DashMap::new());
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UUIDResponse {
     id: String,
 }
@@ -64,6 +68,15 @@ async fn insert_submission(
 
 async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
     let player_name = name.to_lowercase();
+
+    // Favour cache
+    if CACHE.get(&player_name).is_some() {
+        let uuid_resp = UUIDResponse {
+            id: CACHE.get(&player_name).unwrap().id.clone(),
+        };
+        return actix_web::Result::Ok(HttpResponse::Ok().json(uuid_resp));
+    }
+
     let url = format!(
         "https://api.mojang.com/users/profiles/minecraft/{}",
         &player_name
@@ -77,6 +90,9 @@ async fn validate(name: web::Path<String>) -> actix_web::Result<HttpResponse> {
             uuid_response = json;
         }
     }
+
+    // Insert to cache
+    CACHE.insert(player_name, uuid_response.clone());
 
     actix_web::Result::Ok(HttpResponse::Ok().json(uuid_response))
 }
@@ -135,8 +151,8 @@ mod tests {
         let json_string = r#"
           {
           "minecraftUsername": "hu_sk",
-          "age": "22",
-          "linkingId": "276519212175065088",
+          "age": 22,
+          "linkingId": 276519212175065088,
           "addOneThing": "animals",
           "projectsOnBiome": "nothing",
           "biggestProject": "Bigness",
@@ -151,8 +167,8 @@ mod tests {
         let json_string = r#"
           {
           "minecraftUsername": "hu_sk",
-          "age": "22",
-          "linkingId": "276519212175065088",
+          "age": 22,
+          "linkingId": 276519212175065088,
           "addOneThing": "more animal",
           "projectsOnBiome": "nothing",
           "biggestProject": "Big",

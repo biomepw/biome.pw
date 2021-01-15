@@ -5,30 +5,30 @@ extern crate diesel;
 
 use std::env;
 
+use crate::schema::applications::dsl::*;
 use actix_web::http::StatusCode;
 use actix_web::web::{Data, Json};
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
-use diesel::{insert_into, Connection, MysqlConnection};
+use diesel::prelude::*;
+use diesel::r2d2::{self, ConnectionManager};
+use diesel::{insert_into, MysqlConnection};
 use dotenv::dotenv;
 use models::Application;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::schema::applications::dsl::*;
-use diesel::prelude::*;
-
 pub mod models;
 pub mod schema;
+
+type DbPool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UUIDResponse {
     id: String,
 }
 
-async fn application(
-    database: Data<MysqlConnection>,
-    application: Json<Application>,
-) -> impl Responder {
+async fn application(pool: Data<DbPool>, application: Json<Application>) -> impl Responder {
+    let database = pool.get().expect("couldn't get db connection from pool");
     if application_exists(application.linking_id, &database).await {
         println!(
             "Attempted submission already exists: {}",
@@ -109,11 +109,13 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         let db_url =
             env::var("DATABASE_URL").expect("No DATABASE_URL environment variable defined!");
-        let mysql =
-            MysqlConnection::establish(&db_url).expect("Error when trying to connect to database");
+        let manager = ConnectionManager::<MysqlConnection>::new(db_url);
+        let pool = r2d2::Pool::builder()
+            .build(manager)
+            .expect("Failed to create pool.");
         App::new()
             .wrap(middleware::Logger::default())
-            .data(mysql)
+            .data(pool)
             .service(web::resource("/validate/{name}").route(web::get().to(validate)))
             .service(web::resource("/application/submit").route(web::post().to(application)))
             .service(web::resource("/").route(web::get().to(index)))
